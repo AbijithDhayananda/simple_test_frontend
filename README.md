@@ -18,8 +18,8 @@ A modern, animated coffee shop website built to experiment with UI/UX design, sm
 ## 🛠️ Tech Stack
 
 * HTML5
-* CSS3 (Animations, Flexbox/Grid)
-* JavaScript 
+* CSS3 (Animations, Flexbox/Grid)(In-Line)
+* JavaScript(Internal)
 
 ---
 
@@ -39,8 +39,6 @@ This project was built as a **skill exploration exercise** to:
 ```
 /coffee-shop-website
 │── index.html
-│── style.css
-│── script.js
 │── /assets (images, icons, etc.)
 ```
 
