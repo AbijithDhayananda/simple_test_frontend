@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Basheer's Coffee Place — Premium Espresso Experience</title>
+  <meta name="description" content="Basheer's Coffee Place: Handcrafted espresso, signature cold brews, and fresh pastries in a stunning immersive atmosphere." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%237a4b2f'/%3E%3Cpath d='M16 26h26a0 0 0 0 1 0 0v11a10 10 0 0 1-10 10h-6a10 10 0 0 1-10-10V26a0 0 0 0 1 0 0z' fill='%23fff'/%3E%3Cpath d='M42 30h4a5 5 0 0 1 0 10h-4' fill='none' stroke='%23fff' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E" />
+  <style>
+    :root {
+      --primary: #c8956c;
+      --primary-deep: #8b5e3c;
+      --accent: #f0c27a;
+      --gold: #d4a574;
+      --bg-dark: #0a0806;
+      --bg-section: #0f0d0a;
+      --bg-card: rgba(22, 18, 14, 0.85);
+      --text: #e8ddd4;
+      --text-dim: #8a7e74;
+      --glass: rgba(255, 255, 255, 0.04);
+      --glass-border: rgba(255, 255, 255, 0.08);
+      --glow: 0 0 60px rgba(200, 149, 108, 0.15);
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: var(--bg-dark);
+      color: var(--text);
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+    ::selection { background: var(--primary); color: #fff; }
+    h1, h2, h3, .brand-name { font-family: 'Playfair Display', serif; }
+
+    /* ===== 3D CANVAS ===== */
+    #three-canvas {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      z-index: 0; pointer-events: none;
+    }
+
+    /* ===== CUSTOM CURSOR ===== */
+    .cursor-dot {
+      width: 8px; height: 8px; background: var(--primary);
+      border-radius: 50%; position: fixed; pointer-events: none;
+      z-index: 9999; transition: transform 0.1s; mix-blend-mode: difference;
+    }
+    .cursor-ring {
+      width: 40px; height: 40px; border: 2px solid var(--primary);
+      border-radius: 50%; position: fixed; pointer-events: none;
+      z-index: 9998; transition: all 0.15s ease-out; opacity: 0.5;
+    }
+
+    /* ===== HEADER ===== */
+    header {
+      position: fixed; top: 0; width: 100%; z-index: 100;
+      padding: 1.2rem 5%;
+      background: rgba(10, 8, 6, 0.4);
+      backdrop-filter: blur(20px) saturate(1.5);
+      border-bottom: 1px solid var(--glass-border);
+      transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    header.scrolled {
+      padding: 0.8rem 5%;
+      background: rgba(10, 8, 6, 0.85);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+    .header-inner {
+      width: 100%; max-width: 1400px; margin: 0 auto;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .brand-name {
+      font-size: 1.6rem; font-weight: 700; letter-spacing: -0.5px;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--primary) 100%);
+      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    nav { display: flex; gap: clamp(1rem, 3vw, 2.5rem); align-items: center; }
+    nav a {
+      text-decoration: none; color: var(--text-dim); font-weight: 500;
+      font-size: 0.9rem; text-transform: uppercase; letter-spacing: 2px;
+      transition: color 0.3s; position: relative;
+    }
+    nav a::after {
+      content: ''; position: absolute; bottom: -4px; left: 0; width: 0;
+      height: 2px; background: var(--primary); transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    nav a:hover { color: var(--accent); }
+    nav a:hover::after { width: 100%; }
+
+    /* ===== HERO ===== */
+    .hero {
+      position: relative; height: 100vh; width: 100%;
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden;
+    }
+    .hero-video {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      object-fit: cover; z-index: 0; filter: brightness(0.35) contrast(1.1);
+    }
+    .hero-overlay {
+      position: absolute; inset: 0; z-index: 1;
+      background: linear-gradient(180deg,
+        rgba(10,8,6,0.6) 0%,
+        rgba(10,8,6,0.2) 40%,
+        rgba(10,8,6,0.5) 70%,
+        rgba(10,8,6,1) 100%);
+    }
+    .hero-content {
+      position: relative; z-index: 2; text-align: center;
+      width: min(90%, 900px); padding: 2rem;
+    }
+    .hero-badge {
+      display: inline-block; padding: 0.5rem 1.5rem;
+      border: 1px solid var(--glass-border);
+      background: var(--glass); backdrop-filter: blur(10px);
+      border-radius: 50px; font-size: 0.8rem; letter-spacing: 3px;
+      text-transform: uppercase; color: var(--accent);
+      margin-bottom: 2rem; opacity: 0; transform: translateY(20px);
+      animation: fadeUp 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards;
+    }
+    .hero h1 {
+      font-size: clamp(2.5rem, 10vw, 7rem); font-weight: 900;
+      line-height: 1; margin-bottom: 1.5rem; letter-spacing: -2px;
+      opacity: 0; transform: translateY(40px);
+      animation: fadeUp 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.5s forwards;
+    }
+    .hero h1 em {
+      font-style: italic;
+      background: linear-gradient(135deg, var(--accent), var(--primary));
+      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .hero-desc {
+      font-size: clamp(1rem, 2vw, 1.15rem); color: var(--text-dim);
+      width: min(100%, 550px); margin: 0 auto 2.5rem; line-height: 1.8; font-weight: 300;
+      opacity: 0; transform: translateY(30px);
+      animation: fadeUp 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.7s forwards;
+    }
+    .hero-btns {
+      display: flex; gap: 1.2rem; justify-content: center; flex-wrap: wrap;
+      opacity: 0; transform: translateY(30px);
+      animation: fadeUp 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.9s forwards;
+    }
+    .btn-glow {
+      padding: 1rem 2.5rem; border: none; border-radius: 60px;
+      font-family: 'Outfit', sans-serif; font-size: 0.9rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 2px; cursor: pointer;
+      text-decoration: none; transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .btn-fill {
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      color: #0a0806;
+      box-shadow: 0 8px 32px rgba(200, 149, 108, 0.3);
+    }
+    .btn-fill:hover {
+      transform: translateY(-5px) scale(1.03);
+      box-shadow: 0 16px 48px rgba(200, 149, 108, 0.5);
+    }
+    .btn-outline {
+      background: transparent; color: var(--text);
+      border: 1.5px solid var(--glass-border);
+      backdrop-filter: blur(10px);
+    }
+    .btn-outline:hover {
+      border-color: var(--primary); color: var(--accent);
+      transform: translateY(-5px);
+      box-shadow: 0 8px 32px rgba(200, 149, 108, 0.15);
+    }
+    .hero-scroll {
+      position: absolute; bottom: 3rem; left: 50%; transform: translateX(-50%);
+      z-index: 3; display: flex; flex-direction: column; align-items: center;
+      gap: 0.5rem; color: var(--text-dim); font-size: 0.75rem;
+      letter-spacing: 3px; text-transform: uppercase;
+      animation: float 3s ease-in-out infinite;
+    }
+    .scroll-line {
+      width: 1px; height: 40px; background: linear-gradient(to bottom, var(--primary), transparent);
+      animation: scrollPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes fadeUp {
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes float {
+      0%, 100% { transform: translateX(-50%) translateY(0); }
+      50% { transform: translateX(-50%) translateY(-10px); }
+    }
+    @keyframes scrollPulse {
+      0%, 100% { opacity: 0.3; transform: scaleY(1); }
+      50% { opacity: 1; transform: scaleY(1.2); }
+    }
+
+    /* ===== SECTIONS ===== */
+    .section { padding: clamp(4rem, 10vw, 8rem) 5%; position: relative; z-index: 2; }
+    .section-inner { width: 100%; max-width: 1200px; margin: 0 auto; }
+    .section-label {
+      font-size: 0.75rem; text-transform: uppercase; letter-spacing: 4px;
+      color: var(--primary); margin-bottom: 1rem; font-weight: 600;
+    }
+    .section-title {
+      font-size: clamp(2rem, 6vw, 3.5rem); font-weight: 900;
+      line-height: 1.1; margin-bottom: 1.5rem; letter-spacing: -1px;
+    }
+    .section-desc {
+      font-size: 1.05rem; color: var(--text-dim); width: min(100%, 550px);
+      line-height: 1.8; font-weight: 300;
+    }
+
+    /* ===== REVEAL ===== */
+    .reveal {
+      opacity: 0; transform: translateY(40px);
+      transition: all 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .reveal.active { opacity: 1; transform: translateY(0); }
+    .reveal-left {
+      opacity: 0; transform: translateX(-40px);
+      transition: all 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .reveal-left.active { opacity: 1; transform: translateX(0); }
+    .reveal-right {
+      opacity: 0; transform: translateX(40px);
+      transition: all 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .reveal-right.active { opacity: 1; transform: translateX(0); }
+
+    /* ===== MENU GRID ===== */
+    .menu-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 2rem; margin-top: 4rem;
+    }
+    .menu-card {
+      background: var(--bg-card); border-radius: 20px;
+      overflow: hidden; border: 1px solid var(--glass-border);
+      transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+      cursor: pointer; position: relative;
+      transform-style: preserve-3d; perspective: 1000px;
+    }
+    .menu-card:hover {
+      transform: translateY(-15px);
+      border-color: rgba(200, 149, 108, 0.4);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.3), var(--glow);
+    }
+    .menu-card-img {
+      width: 100%; height: 220px; object-fit: cover;
+      transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .menu-card:hover .menu-card-img { transform: scale(1.08); }
+    .menu-card-img-wrap { overflow: hidden; position: relative; }
+    .menu-card-img-wrap::after {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(to top, rgba(10,8,6,0.7) 0%, transparent 50%);
+    }
+    .menu-card-body { padding: 1.5rem 1.8rem 2rem; }
+    .menu-card-tag {
+      font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2px;
+      color: var(--primary); font-weight: 600; margin-bottom: 0.5rem;
+    }
+    .menu-card h3 {
+      font-size: 1.4rem; margin-bottom: 0.5rem; color: var(--text);
+    }
+    .menu-card p {
+      font-size: 0.9rem; color: var(--text-dim); line-height: 1.6;
+      margin-bottom: 1rem;
+    }
+    .menu-card-price {
+      font-size: 1.8rem; font-weight: 800;
+      font-family: 'Playfair Display', serif;
+      background: linear-gradient(135deg, var(--accent), var(--primary));
+      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    }
+
+    /* ===== EQUIPMENT / IMMERSIVE SECTION ===== */
+    .immersive {
+      position: relative; min-height: 85vh;
+      display: flex; align-items: center;
+      overflow: hidden; padding: clamp(4rem, 10vw, 8rem) 5%;
+    }
+    .immersive-bg {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      object-fit: cover; z-index: 0; filter: brightness(0.3);
+    }
+    .immersive-overlay {
+      position: absolute; inset: 0; z-index: 1;
+      background: linear-gradient(135deg, rgba(10,8,6,0.85) 0%, rgba(10,8,6,0.5) 100%);
+    }
+    .immersive-inner {
+      position: relative; z-index: 2; width: 100%; max-width: 1200px; margin: 0 auto;
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: clamp(2rem, 5vw, 4rem); align-items: center;
+    }
+    .immersive h2 {
+      font-size: clamp(2.2rem, 5vw, 3.5rem); margin-bottom: 1.5rem;
+      line-height: 1.1;
+    }
+    .immersive p {
+      color: var(--text-dim); line-height: 1.9; margin-bottom: 1rem; font-weight: 300;
+      width: min(100%, 600px);
+    }
+    .immersive-visual {
+      border-radius: 20px; overflow: hidden;
+      border: 1px solid var(--glass-border);
+      box-shadow: var(--glow); aspect-ratio: 4/3;
+      width: 100%;
+    }
+    .immersive-visual video, .immersive-visual img {
+      width: 100%; height: 100%; object-fit: cover;
+    }
+    .stat-row {
+      display: flex; gap: 2.5rem; margin-top: 2.5rem; flex-wrap: wrap;
+    }
+    .stat-item { text-align: left; }
+    .stat-num {
+      font-family: 'Playfair Display', serif; font-size: clamp(2rem, 4vw, 2.5rem);
+      font-weight: 900;
+      background: linear-gradient(135deg, var(--accent), var(--primary));
+      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .stat-label {
+      font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2px;
+      color: var(--text-dim); margin-top: 0.3rem;
+    }
+
+    /* ===== ABOUT ===== */
+    .about-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: clamp(2rem, 5vw, 4rem);
+      margin-top: 4rem; align-items: center;
+    }
+    .about-img {
+      border-radius: 20px; overflow: hidden;
+      border: 1px solid var(--glass-border);
+      box-shadow: var(--glow); width: 100%;
+    }
+    .about-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .about-text h3 {
+      font-size: 1.6rem; margin-bottom: 1rem; color: var(--text);
+    }
+    .about-text p {
+      color: var(--text-dim); line-height: 1.9; margin-bottom: 1.5rem; font-weight: 300;
+      width: min(100%, 650px);
+    }
+
+    /* ===== REVIEWS ===== */
+    .reviews-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 2rem; margin-top: 4rem;
+    }
+    .review-card {
+      background: var(--bg-card); border-radius: 20px;
+      padding: clamp(1.5rem, 4vw, 2.5rem); border: 1px solid var(--glass-border);
+      transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+    }
+    .review-card::before {
+      content: '"'; position: absolute; top: 1rem; right: 1.5rem;
+      font-family: 'Playfair Display', serif; font-size: 5rem;
+      color: var(--primary); opacity: 0.15; line-height: 1;
+    }
+    .review-card:hover {
+      transform: translateY(-10px);
+      border-color: rgba(200, 149, 108, 0.3);
+      box-shadow: 0 15px 35px rgba(0,0,0,0.2), var(--glow);
+    }
+    .review-stars { color: var(--accent); font-size: 0.9rem; margin-bottom: 1rem; letter-spacing: 2px; }
+    .review-card p {
+      font-style: italic; color: var(--text); line-height: 1.8;
+      margin-bottom: 1.5rem; font-weight: 300;
+    }
+    .review-author { display: flex; align-items: center; gap: 1rem; }
+    .review-avatar {
+      width: 48px; height: 48px; border-radius: 50%;
+      border: 2px solid var(--primary); object-fit: cover;
+    }
+    .review-name { font-weight: 600; font-size: 0.95rem; }
+    .review-role { font-size: 0.75rem; color: var(--text-dim); }
+
+    /* ===== GALLERY ===== */
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.2rem; margin-top: 4rem;
+    }
+    .gallery-item {
+      position: relative; overflow: hidden; border-radius: 16px;
+      cursor: pointer; aspect-ratio: 1;
+      border: 1px solid var(--glass-border);
+      width: 100%;
+    }
+    .gallery-item.wide { grid-column: span 2; aspect-ratio: 2/1; }
+    @media (max-width: 768px) {
+      .gallery-item.wide { grid-column: span 1; aspect-ratio: 1; }
+    }
+    .gallery-item img, .gallery-item video {
+      width: 100%; height: 100%; object-fit: cover;
+      transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .gallery-item:hover img, .gallery-item:hover video { transform: scale(1.1); }
+    .gallery-label-wrap {
+      position: absolute; inset: 0; z-index: 2;
+      background: linear-gradient(to top, rgba(10,8,6,0.8) 0%, transparent 60%);
+      display: flex; align-items: flex-end; padding: 1.5rem;
+      opacity: 0; transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .gallery-item:hover .gallery-label-wrap { opacity: 1; }
+    .gallery-label {
+      color: white; font-weight: 600; font-size: 1rem;
+      letter-spacing: 1px; transform: translateY(10px);
+      transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .gallery-item:hover .gallery-label { transform: translateY(0); }
+
+    /* ===== CONTACT ===== */
+    .contact-section {
+      text-align: center; padding: clamp(4rem, 12vw, 10rem) 5%;
+      position: relative; overflow: hidden;
+    }
+    .contact-glow {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: min(90vw, 600px); height: min(90vw, 600px);
+      background: radial-gradient(circle, rgba(200,149,108,0.15) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .contact-section h2 {
+      font-size: clamp(2.5rem, 8vw, 4rem); margin-bottom: 1.5rem;
+    }
+    .contact-section p {
+      color: var(--text-dim); font-size: 1.1rem; margin-bottom: 0.5rem;
+    }
+    .contact-btn {
+      display: inline-block; margin-top: 2rem;
+      padding: 1.1rem clamp(2rem, 5vw, 3.5rem); border-radius: 60px;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      color: #0a0806; font-weight: 700; font-size: 0.9rem;
+      text-transform: uppercase; letter-spacing: 2px;
+      text-decoration: none;
+      box-shadow: 0 8px 32px rgba(200, 149, 108, 0.3);
+      transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .contact-btn:hover {
+      transform: translateY(-5px) scale(1.03);
+      box-shadow: 0 16px 48px rgba(200, 149, 108, 0.5);
+    }
+
+    /* ===== FOOTER ===== */
+    footer {
+      text-align: center; padding: 3rem 2rem;
+      border-top: 1px solid var(--glass-border);
+      color: var(--text-dim); font-size: 0.85rem;
+      position: relative; z-index: 2;
+    }
+    footer span {
+      background: linear-gradient(135deg, var(--accent), var(--primary));
+      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+      font-weight: 600;
+    }
+
+    /* ===== RESPONSIVE CLEANUP ===== */
+    @media (max-width: 1024px) {
+      /* No longer needed as much due to auto-fit */
+    }
+    @media (max-width: 768px) {
+      header { padding: 1rem 5%; }
+      nav { gap: 1rem; }
+      nav a { font-size: 0.75rem; letter-spacing: 1px; }
+      .cursor-dot, .cursor-ring { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <canvas id="three-canvas"></canvas>
+  <div class="cursor-dot" id="cursorDot"></div>
+  <div class="cursor-ring" id="cursorRing"></div>
+
+  <!-- HEADER -->
+  <header id="mainHeader">
+    <div class="header-inner">
+      <div class="brand-name">Basheer's Coffee</div>
+      <nav>
+        <a href="#menu">Menu</a>
+        <a href="#craft">Craft</a>
+        <a href="#about">About</a>
+        <a href="#reviews">Reviews</a>
+        <a href="#contact">Contact</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero" id="hero">
+    <video class="hero-video" autoplay loop muted playsinline>
+      <source src="coffee-hero-bg.mp4" type="video/mp4">
+    </video>
+    <div class="hero-overlay"></div>
+    <div class="hero-content">
+      <div class="hero-badge">☕ Est. 2019 — Premium Roast</div>
+      <h1>Your Cozy<br>Corner for<br><em>Bold Coffee</em></h1>
+      <p class="hero-desc">Handcrafted espresso, signature cold brews, and fresh pastries. Every cup is an indulgence down to the last drop.</p>
+      <div class="hero-btns">
+        <a href="#menu" class="btn-glow btn-fill">Explore Menu</a>
+        <a href="#contact" class="btn-glow btn-outline">Visit Us</a>
+      </div>
+    </div>
+    <div class="hero-scroll">
+      <span>Scroll</span>
+      <div class="scroll-line"></div>
+    </div>
+  </section>
+
+  <main>
+    <!-- MENU -->
+    <section class="section" id="menu">
+      <div class="section-inner">
+        <div class="section-label reveal">Our Selection</div>
+        <h2 class="section-title reveal">Featured Menu</h2>
+        <p class="section-desc reveal">Crafted with care from single-origin beans</p>
+          <div class="menu-grid">
+            <div class="menu-card reveal">
+              <div class="menu-card-img-wrap"><img class="menu-card-img" src="hero-latte.png" alt="Honey Oat Latte"></div>
+              <div class="menu-card-body">
+                <div class="menu-card-tag">Signature</div>
+                <h3>Honey Oat Latte</h3>
+                <p>Double espresso, steamed oat milk, and wildflower honey with cinnamon dust.</p>
+                <div class="menu-card-price">$5.80</div>
+              </div>
+            </div>
+            <div class="menu-card reveal">
+              <div class="menu-card-img-wrap"><img class="menu-card-img" src="mocha-pour.png" alt="Mocha Bloom"></div>
+              <div class="menu-card-body">
+                <div class="menu-card-tag">Best Seller</div>
+                <h3>Mocha Bloom</h3>
+                <p>Rich dark chocolate, espresso, and velvety microfoam with cocoa drizzle.</p>
+                <div class="menu-card-price">$6.20</div>
+              </div>
+            </div>
+            <div class="menu-card reveal">
+              <div class="menu-card-img-wrap"><img class="menu-card-img" src="cold-brew.png" alt="Maple Cold Brew"></div>
+              <div class="menu-card-body">
+                <div class="menu-card-tag">Seasonal</div>
+                <h3>Maple Cold Brew</h3>
+                <p>18-hour steeped, maple cream, cinnamon and a whisper of vanilla.</p>
+                <div class="menu-card-price">$5.50</div>
+              </div>
+            </div>
+            <div class="menu-card reveal">
+              <div class="menu-card-img-wrap"><img class="menu-card-img" src="caramel-macchiato.png" alt="Caramel Macchiato"></div>
+              <div class="menu-card-body">
+                <div class="menu-card-tag">Classic</div>
+                <h3>Caramel Macchiato</h3>
+                <p>Smooth espresso layered with silky steamed milk and caramel drizzle.</p>
+                <div class="menu-card-price">$5.95</div>
+              </div>
+            </div>
+            <div class="menu-card reveal">
+              <div class="menu-card-img-wrap"><img class="menu-card-img" src="matcha-latte.png" alt="Matcha Latte"></div>
+              <div class="menu-card-body">
+                <div class="menu-card-tag">Specialty</div>
+                <h3>Matcha Latte</h3>
+                <p>Ceremonial-grade matcha whisked with creamy steamed almond milk.</p>
+                <div class="menu-card-price">$6.50</div>
+              </div>
+            </div>
+            <div class="menu-card reveal">
+              <div class="menu-card-img-wrap"><img class="menu-card-img" src="iced-coffee.png" alt="Vanilla Cortado"></div>
+              <div class="menu-card-body">
+                <div class="menu-card-tag">Artisan</div>
+                <h3>Vanilla Cortado</h3>
+                <p>Perfectly balanced espresso and velvety steamed milk with vanilla bean.</p>
+                <div class="menu-card-price">$5.20</div>
+              </div>
+            </div>
+          </div>
+      </div>
+    </section>
+
+    <!-- IMMERSIVE CRAFT SECTION -->
+    <section class="immersive" id="craft">
+      <video class="immersive-bg" autoplay loop muted playsinline>
+        <source src="coffee-beans-falling.mp4" type="video/mp4">
+      </video>
+      <div class="immersive-overlay"></div>
+      <div class="immersive-inner">
+        <div class="reveal-left">
+          <div class="section-label">The Craft</div>
+          <h2>Precision<br>Brewing</h2>
+          <p>Our Italian espresso machines are maintained to perfection. Every shot is pulled with precision — delivering bold, rich flavors that define our signature drinks.</p>
+          <p>Freshly roasted beans sourced from sustainable farms across Ethiopia, Colombia, and Guatemala.</p>
+          <div class="stat-row">
+            <div class="stat-item">
+              <div class="stat-num">12+</div>
+              <div class="stat-label">Origins</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-num">50K</div>
+              <div class="stat-label">Cups Served</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-num">4.9</div>
+              <div class="stat-label">Rating</div>
+            </div>
+          </div>
+        </div>
+        <div class="immersive-visual reveal-right">
+          <video autoplay loop muted playsinline>
+            <source src="coffee-pour.mp4" type="video/mp4">
+          </video>
+        </div>
+      </div>
+    </section>
+
+    <!-- ABOUT -->
+    <section class="section" id="about">
+      <div class="section-inner">
+        <div class="section-label reveal">Our Story</div>
+        <h2 class="section-title reveal">About Basheer's Coffee</h2>
+          <div class="about-grid">
+            <div class="about-img reveal-left">
+              <img src="cafe-interior.png" alt="Basheer's Coffee Interior">
+            </div>
+          <div class="about-text reveal-right">
+            <h3>Born from Passion</h3>
+            <p>Basheer's Coffee Place started as a passion project in 2019. We believed that every coffee experience should be special, intentional, and memorable.</p>
+            <h3>Sustainably Sourced</h3>
+            <p>We partner with small-batch roasters and sustainable farms to bring you the finest coffee. Each bean is selected with care, roasted to perfection, and brewed with expertise.</p>
+            <h3>Community First</h3>
+            <p>Whether you're stopping by for a quick espresso or settling in with your laptop — you're part of our family. Welcome home.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- REVIEWS -->
+    <section class="section" id="reviews">
+      <div class="section-inner">
+        <div class="section-label reveal">Testimonials</div>
+        <h2 class="section-title reveal">What Our Guests Say</h2>
+        <div class="reviews-grid">
+          <div class="review-card reveal">
+            <div class="review-stars">★ ★ ★ ★ ★</div>
+            <p>"Best cappuccino in the entire city. The warm atmosphere and incredible attention to detail makes every visit special."</p>
+            <div class="review-author">
+              <img class="review-avatar" src="https://i.pravatar.cc/100?img=1" alt="Sarah M.">
+              <div>
+                <div class="review-name">Sarah Mitchell</div>
+                <div class="review-role">Regular since 2020</div>
+              </div>
+            </div>
+          </div>
+          <div class="review-card reveal">
+            <div class="review-stars">★ ★ ★ ★ ★</div>
+            <p>"Their cold brew is unreal. I literally plan my entire week around visiting Basheer's. The vibe is absolutely immaculate."</p>
+            <div class="review-author">
+              <img class="review-avatar" src="https://i.pravatar.cc/100?img=3" alt="James K.">
+              <div>
+                <div class="review-name">James Kramer</div>
+                <div class="review-role">Coffee Enthusiast</div>
+              </div>
+            </div>
+          </div>
+          <div class="review-card reveal">
+            <div class="review-stars">★ ★ ★ ★ ★</div>
+            <p>"Perfect place to work remotely. Great wifi, supportive staff, and the most amazing coffee I've ever had."</p>
+            <div class="review-author">
+              <img class="review-avatar" src="https://i.pravatar.cc/100?img=5" alt="Emma T.">
+              <div>
+                <div class="review-name">Emma Torres</div>
+                <div class="review-role">Freelance Designer</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- GALLERY -->
+    <section class="section" id="gallery">
+      <div class="section-inner">
+        <div class="section-label reveal">Gallery</div>
+        <h2 class="section-title reveal">Coffee Moments</h2>
+        <p class="section-desc reveal">Capturing the artistry and passion in every brew</p>
+          <div class="gallery-grid">
+            <div class="gallery-item wide reveal">
+              <video autoplay loop muted playsinline><source src="coffee-pour.mp4" type="video/mp4"></video>
+              <div class="gallery-label-wrap"><div class="gallery-label">Perfect Pour</div></div>
+            </div>
+            <div class="gallery-item reveal">
+              <img src="beans-dark.png" alt="Roasted Beans">
+              <div class="gallery-label-wrap"><div class="gallery-label">Roasted Beans</div></div>
+            </div>
+            <div class="gallery-item reveal">
+              <img src="espresso-machine.png" alt="Our Equipment">
+              <div class="gallery-label-wrap"><div class="gallery-label">Our Equipment</div></div>
+            </div>
+            <div class="gallery-item reveal">
+              <img src="bg-coffee-4.jpg" alt="The Space">
+              <div class="gallery-label-wrap"><div class="gallery-label">The Space</div></div>
+            </div>
+            <div class="gallery-item reveal">
+              <video autoplay loop muted playsinline><source src="coffee-brew.mp4" type="video/mp4"></video>
+              <div class="gallery-label-wrap"><div class="gallery-label">Fresh Brew</div></div>
+            </div>
+            <div class="gallery-item wide reveal">
+              <video autoplay loop muted playsinline><source src="coffee-ambience.mp4" type="video/mp4"></video>
+              <div class="gallery-label-wrap"><div class="gallery-label">Warm Ambiance</div></div>
+            </div>
+          </div>
+      </div>
+    </section>
+
+    <!-- CONTACT -->
+    <section class="contact-section" id="contact">
+      <div class="contact-glow"></div>
+      <div class="section-inner" style="position:relative;z-index:2;">
+        <div class="section-label reveal">Plan Your Visit</div>
+        <h2 class="section-title reveal">Visit <em style="font-style:italic;color:var(--accent);">Basheer's</em></h2>
+        <p class="reveal">📍 125 Willow Street, Downtown</p>
+        <p class="reveal">⏰ Mon — Sun: 7:00 AM – 8:00 PM</p>
+        <a href="mailto:hello@basheerscoffee.com" class="contact-btn reveal">Get In Touch</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>© 2026 <span>Basheer's Coffee Place</span>. Brewed with care and passion.</p>
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    // ===== CUSTOM CURSOR =====
+    const dot = document.getElementById('cursorDot');
+    const ring = document.getElementById('cursorRing');
+    let mx = 0, my = 0, rx = 0, ry = 0;
+    document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+    function animCursor() {
+      rx += (mx - rx) * 0.15; ry += (my - ry) * 0.15;
+      dot.style.left = mx - 4 + 'px'; dot.style.top = my - 4 + 'px';
+      ring.style.left = rx - 20 + 'px'; ring.style.top = ry - 20 + 'px';
+      requestAnimationFrame(animCursor);
+    }
+    animCursor();
+    document.querySelectorAll('a, button, .menu-card, .gallery-item, .review-card').forEach(el => {
+      el.addEventListener('mouseenter', () => { ring.style.transform = 'scale(1.6)'; ring.style.opacity = '0.25'; });
+      el.addEventListener('mouseleave', () => { ring.style.transform = 'scale(1)'; ring.style.opacity = '0.5'; });
+    });
+
+    // ===== THREE.JS 3D BACKGROUND =====
+    let camera, scene, renderer, particles, coffeeBeans = [];
+    let mouseX = 0, mouseY = 0;
+    (function initThree() {
+      const canvas = document.getElementById('three-canvas');
+      scene = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera(75, innerWidth/innerHeight, 0.1, 1000);
+      camera.position.z = 50;
+      renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+      renderer.setSize(innerWidth, innerHeight);
+      renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+      renderer.setClearColor(0x000000, 0);
+
+      // Particles
+      const count = 800;
+      const geo = new THREE.BufferGeometry();
+      const pos = new Float32Array(count * 3);
+      const cols = new Float32Array(count * 3);
+      const coffeeHues = [
+        new THREE.Color(0xc8956c), new THREE.Color(0x8b5e3c),
+        new THREE.Color(0xd4a574), new THREE.Color(0xf0c27a),
+        new THREE.Color(0x5a3a24)
+      ];
+      for (let i = 0; i < count; i++) {
+        pos[i*3] = (Math.random()-0.5)*200;
+        pos[i*3+1] = (Math.random()-0.5)*200;
+        pos[i*3+2] = (Math.random()-0.5)*120;
+        const c = coffeeHues[Math.floor(Math.random()*coffeeHues.length)];
+        cols[i*3]=c.r; cols[i*3+1]=c.g; cols[i*3+2]=c.b;
+      }
+      geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+      geo.setAttribute('color', new THREE.BufferAttribute(cols, 3));
+      const mat = new THREE.PointsMaterial({
+        size: 1, vertexColors: true, transparent: true, opacity: 0.4,
+        sizeAttenuation: true, blending: THREE.AdditiveBlending
+      });
+      particles = new THREE.Points(geo, mat);
+      scene.add(particles);
+
+      // 3D Coffee beans
+      const bGeo = new THREE.SphereGeometry(1, 16, 16);
+      bGeo.scale(0.6, 0.85, 0.35);
+      for (let i = 0; i < 20; i++) {
+        const bMat = new THREE.MeshPhongMaterial({
+          color: coffeeHues[Math.floor(Math.random()*coffeeHues.length)],
+          shininess: 60, transparent: true, opacity: 0.2
+        });
+        const bean = new THREE.Mesh(bGeo, bMat);
+        bean.position.set((Math.random()-0.5)*100, (Math.random()-0.5)*100, (Math.random()-0.5)*60-20);
+        bean.rotation.set(Math.random()*6.28, Math.random()*6.28, Math.random()*6.28);
+        bean.userData = {
+          rs: { x:(Math.random()-0.5)*0.015, y:(Math.random()-0.5)*0.015, z:(Math.random()-0.5)*0.015 },
+          fs: Math.random()*0.008+0.004, fo: Math.random()*6.28
+        };
+        scene.add(bean); coffeeBeans.push(bean);
+      }
+
+      // Torus ring
+      const torusGeo = new THREE.TorusGeometry(25, 0.15, 16, 100);
+      const torusMat = new THREE.MeshBasicMaterial({ color: 0xc8956c, transparent: true, opacity: 0.08 });
+      const torus = new THREE.Mesh(torusGeo, torusMat);
+      torus.position.z = -30;
+      scene.add(torus);
+
+      scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+      const pl = new THREE.PointLight(0xd4a574, 1.2, 150);
+      pl.position.set(20, 20, 20); scene.add(pl);
+
+      addEventListener('resize', () => {
+        camera.aspect = innerWidth/innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(innerWidth, innerHeight);
+      });
+      addEventListener('mousemove', e => {
+        mouseX = (e.clientX/innerWidth)*2-1;
+        mouseY = (e.clientY/innerHeight)*2-1;
+      });
+
+      function animate() {
+        requestAnimationFrame(animate);
+        const t = Date.now() * 0.001;
+        particles.rotation.y += 0.00015;
+        particles.rotation.x += 0.00008;
+        const p = particles.geometry.attributes.position.array;
+        for (let i = 0; i < p.length; i += 3) {
+          p[i] += Math.sin(t + i) * 0.015;
+          p[i+1] += 0.025;
+          p[i+2] += Math.cos(t + i) * 0.008;
+          if (p[i+1] > 100) p[i+1] = -100;
+        }
+        particles.geometry.attributes.position.needsUpdate = true;
+        coffeeBeans.forEach(b => {
+          b.rotation.x += b.userData.rs.x;
+          b.rotation.y += b.userData.rs.y;
+          b.position.y += Math.sin(t * b.userData.fs + b.userData.fo) * 0.04;
+          b.position.x += Math.cos(t * b.userData.fs * 0.5 + b.userData.fo) * 0.02;
+        });
+        torus.rotation.x = t * 0.08;
+        torus.rotation.y = t * 0.05;
+        camera.position.x += (mouseX * 6 - camera.position.x) * 0.03;
+        camera.position.y += (-mouseY * 6 - camera.position.y) * 0.03;
+        camera.lookAt(scene.position);
+        renderer.render(scene, camera);
+      }
+      animate();
+    })();
+
+    // ===== HEADER SCROLL =====
+    const header = document.getElementById('mainHeader');
+    addEventListener('scroll', () => {
+      header.classList.toggle('scrolled', scrollY > 60);
+    }, { passive: true });
+
+    // ===== SCROLL REVEAL =====
+    const revealEls = document.querySelectorAll('.reveal, .reveal-left, .reveal-right');
+    const obsOptions = {
+      threshold: 0.15,
+      rootMargin: '0px 0px -100px 0px'
+    };
+    const obs = new IntersectionObserver((entries) => {
+      entries.forEach((e) => {
+        if (e.isIntersecting) {
+          e.target.classList.add('active');
+        }
+      });
+    }, obsOptions);
+    revealEls.forEach(el => obs.observe(el));
+
+    // ===== SMOOTH NAV =====
+    document.querySelectorAll('a[href^="#"]').forEach(a => {
+      a.addEventListener('click', e => {
+        e.preventDefault();
+        const id = a.getAttribute('href');
+        const t = document.querySelector(id);
+        if (t) {
+          const offset = 80;
+          const pos = t.getBoundingClientRect().top + window.pageYOffset - offset;
+          window.scrollTo({ top: pos, behavior: 'smooth' });
+        }
+      });
+    });
+
+    // ===== 3D CARD TILT =====
+    document.querySelectorAll('.menu-card').forEach(card => {
+      card.addEventListener('mousemove', e => {
+        const r = card.getBoundingClientRect();
+        const x = (e.clientX - r.left) / r.width - 0.5;
+        const y = (e.clientY - r.top) / r.height - 0.5;
+        card.style.transform = `perspective(800px) rotateY(${x*8}deg) rotateX(${-y*8}deg) translateY(-15px)`;
+      });
+      card.addEventListener('mouseleave', () => {
+        card.style.transform = 'perspective(800px) rotateY(0) rotateX(0) translateY(0)';
+      });
+    });
+
+    // ===== PARALLAX HERO =====
+    let scrollPos = 0;
+    function parallax() {
+      scrollPos += (window.pageYOffset - scrollPos) * 0.1;
+      const h = document.querySelector('.hero-content');
+      const v = document.querySelector('.hero-video');
+      if (h) h.style.transform = `translateY(${scrollPos * 0.3}px)`;
+      if (v) v.style.transform = `translateY(${scrollPos * 0.1}px) scale(${1 + scrollPos * 0.0002})`;
+      requestAnimationFrame(parallax);
+    }
+    parallax();
+  </script>
+</body>
+</html>
